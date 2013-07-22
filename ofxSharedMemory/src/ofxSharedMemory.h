@@ -20,30 +20,30 @@
  Thanks to sloopi & KJ1 on the openframeworks forum for introducing me to 'memory mapped files'
  - http://forum.openframeworks.cc/index.php/topic,11730.msg55510.html#msg55510
  
- KJ1 created an excellent Windows/VS specific example for kinect (https://github.com/Kj1/ofxKinectMemoryMapped) which shares kinect data from a C# app with an OF app. I made this because I needed a pure C++ example that worked on osx and windows for sharing any kind of data.
- 
  TODO::
  - need to allow reconnection for the client when server closes the shared memory without having to connect() in update/every frame
  - example for sharing non image data- eg. floats, ints, strings, etc.
  */
 
 
+//template <typename T>
+template<class T>
 class ofxSharedMemory {
     
 public:
 
     ofxSharedMemory();
-    virtual ~ofxSharedMemory();
+    ~ofxSharedMemory();
     
-    void setup(string memoryKey, int size, bool isServer=true);
+    void setup(string memKey, int size, bool server=true);
+    
 	bool connect();
     void close();
 
-    void setData(unsigned char * sourceData);
+    void setData(T sourceData);
     
     // data to share
-    unsigned char * getData();
-
+    T getData();
 
 protected:
 
@@ -51,7 +51,8 @@ protected:
     string memoryKey;
     int memorySize;
     
-    unsigned char *sharedData;
+    //unsigned char *sharedData;
+    T sharedData;
 	bool isReady;
   
 	#ifdef _WIN32
@@ -60,3 +61,109 @@ protected:
 	#endif
 };
 
+
+//--------------------------------------------------------------
+/* 
+ Implementation
+ Keeping implementation inside the .h to make the client side neater.
+ Otherwise the testApp has to import ofxSharedMemory.cpp as well as ofxSharedMemory.h
+ */
+//--------------------------------------------------------------
+template <typename T>
+ofxSharedMemory<T>::ofxSharedMemory(){
+    
+    sharedData = NULL;
+    isServer = false;
+    memoryKey = "";
+    memorySize = 0;
+	isReady = false;
+}
+
+template <typename T>
+ofxSharedMemory<T>::~ofxSharedMemory(){
+    close();
+}
+
+template <typename T>
+void ofxSharedMemory<T>::setup(string memoryKey, int memorySize, bool isServer) {
+    
+    this->memoryKey = memoryKey;
+    this->memorySize = memorySize;
+    this->isServer = isServer;
+    
+    #ifdef _WIN32
+        tMemoryKey = std::wstring(memoryKey.begin(), memoryKey.end());
+    #endif
+}
+
+template <typename T>
+void ofxSharedMemory<T>::close() {
+    
+    if(isServer) {
+        #ifdef _WIN32
+            UnmapViewOfFile(sharedData);
+            CloseHandle(hMapFile);
+        #else
+            munmap(sharedData, memorySize);
+            shm_unlink(memoryKey.c_str());
+        #endif
+    }
+    
+}
+
+template <typename T>
+bool ofxSharedMemory<T>::connect() {
+    #ifdef _WIN32
+        
+        if(isServer) {
+            // server must use CreateFileMapping
+            hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, memorySize, tMemoryKey.c_str());
+        } else {
+            hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, false, tMemoryKey.c_str());
+        }
+        if(hMapFile == NULL) {
+            isReady = false;
+            return false;
+        }
+        
+        sharedData = (T) MapViewOfFile(hMapFile,FILE_MAP_ALL_ACCESS, 0, 0, memorySize);
+        if(sharedData == NULL) {
+            CloseHandle(hMapFile);
+            isReady = false;
+            return false;
+        }
+    #else
+        
+        // create/connect to shared memory from dummy file
+        int descriptor = shm_open(memoryKey.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+        if(descriptor == -1) {
+            isReady = false;
+            return false;
+        }
+        
+        // map to memory
+        ftruncate(descriptor, memorySize);
+        sharedData = (T) mmap(NULL, memorySize, PROT_WRITE | PROT_READ, MAP_SHARED, descriptor, 0);
+        if(sharedData == NULL) {
+            if(isServer) shm_unlink(memoryKey.c_str());
+            isReady = false;
+            return false;
+        }
+        
+    #endif
+        
+        isReady = true;
+        return true;
+}
+
+// copies source data to shared data
+template <typename T>
+void ofxSharedMemory<T>::setData(T sourceData) {
+    memcpy(sharedData, sourceData, memorySize);
+}
+
+// returns shared data
+template <typename T>
+T ofxSharedMemory<T>::getData() {
+    return sharedData;
+}

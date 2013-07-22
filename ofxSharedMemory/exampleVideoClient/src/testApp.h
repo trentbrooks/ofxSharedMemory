@@ -20,7 +20,9 @@ class testApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-    ofxSharedMemory memoryMappedFile;
+    // when creating an ofxSharedMemory, use the <> to assign a data type
+    ofxSharedMemory<unsigned char*> memoryMappedFile;
+    
 	bool isConnected;
 	ofTexture texture; // created from memory mapped file
     
