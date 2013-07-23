@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup>
+		<ClCompile Include="src\testApp.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+		<ClCompile Include="src\main.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+	</ItemGroup>
+	<ItemGroup>
+		<Filter Include="src">
+			<UniqueIdentifier>{d8376475-7454-4a24-b08a-aac121d3ad6f}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons">
+			<UniqueIdentifier>{71834f65-f3a9-211e-73b8-dc8563776aec}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxSharedMemory">
+			<UniqueIdentifier>{034a9338-d10f-b123-dce3-93f9d7c6b7a0}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="addons\ofxSharedMemory\src">
+			<UniqueIdentifier>{c11ff3ee-800e-622c-55b5-45391885db49}</UniqueIdentifier>
+		</Filter>
+	</ItemGroup>
+	<ItemGroup>
+		<ClInclude Include="src\testApp.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="..\..\..\addons\ofxSharedMemory\src\ofxSharedMemory.h">
+			<Filter>addons\ofxSharedMemory\src</Filter>
+		</ClInclude>
+	</ItemGroup>
+</Project>
